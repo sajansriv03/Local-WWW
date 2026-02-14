@@ -125,14 +125,13 @@ export default function Game() {
         });
         if(ok) moves.push({cells,track,rot:d.r});
         
-        // Bridge crossing moves (starting 2 away, jumping over 3-size tile)
+        // Bridge crossing moves (starting 2 away, jumping over one 3-size bridge center)
         const bridgeCells = Array(tile.size).fill(0).map((_,i) => [w.c+d.dx*(i+2), w.r+d.dy*(i+2)]);
         const canBridge = bridgeCells.every(([c,r],i) => {
           if(c<0||c>14||r<0||r>9) return false;
           if((c===0&&r===0)||(c===14&&r===0)||(c===0&&r===9)||(c===14&&r===9)) return false;
           if(boardState[r][c].covered) return false;
           if(i===0) {
-            // Check if jumping over a 3-size tile
             const midC = w.c + d.dx;
             const midR = w.r + d.dy;
             if(midC<0||midC>14||midR<0||midR>9) return false;
@@ -142,6 +141,28 @@ export default function Game() {
           return true;
         });
         if(canBridge) moves.push({cells:bridgeCells,track,rot:d.r});
+
+        // Double-bridge crossing moves (starting 3 away, jumping over two adjacent 3-size bridge centers)
+        const doubleBridgeCells = Array(tile.size).fill(0).map((_,i) => [w.c+d.dx*(i+3), w.r+d.dy*(i+3)]);
+        const canDoubleBridge = doubleBridgeCells.every(([c,r],i) => {
+          if(c<0||c>14||r<0||r>9) return false;
+          if((c===0&&r===0)||(c===14&&r===0)||(c===0&&r===9)||(c===14&&r===9)) return false;
+          if(boardState[r][c].covered) return false;
+          if(i===0) {
+            const mid1C = w.c + d.dx;
+            const mid1R = w.r + d.dy;
+            const mid2C = w.c + d.dx*2;
+            const mid2R = w.r + d.dy*2;
+            if(mid1C<0||mid1C>14||mid1R<0||mid1R>9) return false;
+            if(mid2C<0||mid2C>14||mid2R<0||mid2R>9) return false;
+            if(!boardState[mid1R][mid1C] || !boardState[mid2R][mid2C]) return false;
+            if(!boardState[mid1R][mid1C].covered || !boardState[mid2R][mid2C].covered) return false;
+            const isBridgeCenter = (c0, r0) => placedTilesState.some(t => t.size===3 && t.cells[1] && t.cells[1][0]===c0 && t.cells[1][1]===r0);
+            return isBridgeCenter(mid1C, mid1R) && isBridgeCenter(mid2C, mid2R);
+          }
+          return true;
+        });
+        if(canDoubleBridge) moves.push({cells:doubleBridgeCells,track,rot:d.r});
       });
     });
     return moves;
