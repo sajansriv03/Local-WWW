@@ -137,7 +137,7 @@ export default function Game() {
             const midR = w.r + d.dy;
             if(midC<0||midC>14||midR<0||midR>9) return false;
             if(!boardState[midR][midC].covered) return false;
-            return placedTilesState.some(t => t.size===3 && t.cells.some(([tc,tr]) => tc===midC && tr===midR));
+            return placedTilesState.some(t => t.size===3 && t.cells[1] && t.cells[1][0]===midC && t.cells[1][1]===midR);
           }
           return true;
         });
