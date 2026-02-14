@@ -125,44 +125,26 @@ export default function Game() {
         });
         if(ok) moves.push({cells,track,rot:d.r});
         
-        // Bridge crossing moves (starting 2 away, jumping over one 3-size bridge center)
-        const bridgeCells = Array(tile.size).fill(0).map((_,i) => [w.c+d.dx*(i+2), w.r+d.dy*(i+2)]);
-        const canBridge = bridgeCells.every(([c,r],i) => {
-          if(c<0||c>14||r<0||r>9) return false;
-          if((c===0&&r===0)||(c===14&&r===0)||(c===0&&r===9)||(c===14&&r===9)) return false;
-          if(boardState[r][c].covered) return false;
-          if(i===0) {
-            const midC = w.c + d.dx;
-            const midR = w.r + d.dy;
-            if(midC<0||midC>14||midR<0||midR>9) return false;
-            if(!boardState[midR][midC].covered) return false;
-            return placedTilesState.some(t => t.size===3 && t.cells[1] && t.cells[1][0]===midC && t.cells[1][1]===midR);
-          }
-          return true;
-        });
-        if(canBridge) moves.push({cells:bridgeCells,track,rot:d.r});
+        // Bridge crossing moves (supports jumping over any number of adjacent 3-size bridge centers)
+        const isBridgeCenter = (c0, r0) => placedTilesState.some(t => t.size===3 && t.cells[1] && t.cells[1][0]===c0 && t.cells[1][1]===r0);
+        for(let span=1; span<=14; span++) {
+          const crossed = Array(span).fill(0).map((_,i) => [w.c+d.dx*(i+1), w.r+d.dy*(i+1)]);
+          const crossedAreValidBridgeCenters = crossed.every(([c,r]) => {
+            if(c<0||c>14||r<0||r>9) return false;
+            if(!boardState[r][c].covered) return false;
+            return isBridgeCenter(c, r);
+          });
+          if(!crossedAreValidBridgeCenters) break;
 
-        // Double-bridge crossing moves (starting 3 away, jumping over two adjacent 3-size bridge centers)
-        const doubleBridgeCells = Array(tile.size).fill(0).map((_,i) => [w.c+d.dx*(i+3), w.r+d.dy*(i+3)]);
-        const canDoubleBridge = doubleBridgeCells.every(([c,r],i) => {
-          if(c<0||c>14||r<0||r>9) return false;
-          if((c===0&&r===0)||(c===14&&r===0)||(c===0&&r===9)||(c===14&&r===9)) return false;
-          if(boardState[r][c].covered) return false;
-          if(i===0) {
-            const mid1C = w.c + d.dx;
-            const mid1R = w.r + d.dy;
-            const mid2C = w.c + d.dx*2;
-            const mid2R = w.r + d.dy*2;
-            if(mid1C<0||mid1C>14||mid1R<0||mid1R>9) return false;
-            if(mid2C<0||mid2C>14||mid2R<0||mid2R>9) return false;
-            if(!boardState[mid1R][mid1C] || !boardState[mid2R][mid2C]) return false;
-            if(!boardState[mid1R][mid1C].covered || !boardState[mid2R][mid2C].covered) return false;
-            const isBridgeCenter = (c0, r0) => placedTilesState.some(t => t.size===3 && t.cells[1] && t.cells[1][0]===c0 && t.cells[1][1]===r0);
-            return isBridgeCenter(mid1C, mid1R) && isBridgeCenter(mid2C, mid2R);
-          }
-          return true;
-        });
-        if(canDoubleBridge) moves.push({cells:doubleBridgeCells,track,rot:d.r});
+          const landingCells = Array(tile.size).fill(0).map((_,i) => [w.c+d.dx*(span+i+1), w.r+d.dy*(span+i+1)]);
+          const canLand = landingCells.every(([c,r]) => {
+            if(c<0||c>14||r<0||r>9) return false;
+            if((c===0&&r===0)||(c===14&&r===0)||(c===0&&r===9)||(c===14&&r===9)) return false;
+            if(boardState[r][c].covered) return false;
+            return true;
+          });
+          if(canLand) moves.push({cells:landingCells,track,rot:d.r});
+        }
       });
     });
     return moves;
